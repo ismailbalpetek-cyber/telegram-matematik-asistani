@@ -13,15 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Python kurulumu
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Paketleri yükle
         run: pip install -r requirements.txt
 
-      - name: Run bot
+      - name: Botu çalıştır
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: python main.py
