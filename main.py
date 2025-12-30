@@ -1,3 +1,5 @@
+print("BOT_TOKEN var mı:", bool(os.environ.get("BOT_TOKEN")))
+print("GOOGLE_API_KEY var mı:", bool(os.environ.get("GOOGLE_API_KEY")))
 import os
 import base64
 import google.generativeai as genai
