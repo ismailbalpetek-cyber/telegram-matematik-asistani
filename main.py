@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-BOT_TOKEN = "BURAYA_TOKEN_GELECEK"
+BOT_TOKEN = "8545319991:AAGMxJ4L_iDZgdYu3yLaCGpncNiHpj7ipRE"
 
 async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
     gelen_mesaj = update.message.text
