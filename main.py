@@ -1,30 +1,34 @@
+import os
+import google.generativeai as genai
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
-import os
+
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     if update.message.text:
-        await update.message.reply_text(
-            "📝 Metin alındı.\n\nBir sonraki aşamada bu sorudan yeni sorular üreteceğim."
-        )
+        soru = update.message.text
 
     elif update.message.photo:
-        await update.message.reply_text(
-            "🖼️ Görsel alındı.\n\nBir sonraki aşamada resimden soruyu okuyacağım."
-        )
+        photo = update.message.photo[-1]
+        file = await photo.get_file()
+        image_bytes = await file.download_as_bytearray()
 
-    elif update.message.document:
-        await update.message.reply_text(
-            "📄 Dosya alındı.\n\nBir sonraki aşamada içeriği analiz edeceğim."
-        )
+        response = model.generate_content([
+            "Bu görseldeki matematik sorusunu aynen yazıya dök.",
+            image_bytes
+        ])
+        soru = response.text
 
     else:
-        await update.message.reply_text(
-            "⚠️ Desteklenmeyen içerik."
-        )
+        return
+
+    await update.message.reply_text(
+        "📘 Soru alındı:\n\n" + soru
+    )
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(MessageHandler(filters.ALL, mesaj_yakala))
