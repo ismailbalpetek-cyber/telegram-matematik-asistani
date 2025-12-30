@@ -1,34 +1,58 @@
 import os
+import base64
 import google.generativeai as genai
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+# Anahtarlar
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-
 async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.text:
-        soru = update.message.text
+    try:
+        # METİN GELİRSE
+        if update.message.text:
+            soru = update.message.text
 
-    elif update.message.photo:
-        photo = update.message.photo[-1]
-        file = await photo.get_file()
-        image_bytes = await file.download_as_bytearray()
+        # FOTOĞRAF GELİRSE
+        elif update.message.photo:
+            photo = update.message.photo[-1]
+            file = await photo.get_file()
+            image_bytes = await file.download_as_bytearray()
 
-        response = model.generate_content([
-            "Bu görseldeki matematik sorusunu aynen yazıya dök.",
-            image_bytes
-        ])
-        soru = response.text
+            image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-    else:
-        return
+            response = model.generate_content([
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": "Bu görseldeki matematik sorusunu aynen yazıya dök."},
+                        {
+                            "inline_data": {
+                                "mime_type": "image/png",
+                                "data": image_base64
+                            }
+                        }
+                    ]
+                }
+            ])
 
-    await update.message.reply_text(
-        "📘 Soru alındı:\n\n" + soru
-    )
+            soru = response.text
+
+        else:
+            return
+
+        await update.message.reply_text(
+            "📘 Soru alındı:\n\n" + soru
+        )
+
+    except Exception as e:
+        await update.message.reply_text(
+            "❌ Hata oluştu:\n" + str(e)
+        )
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(MessageHandler(filters.ALL, mesaj_yakala))
