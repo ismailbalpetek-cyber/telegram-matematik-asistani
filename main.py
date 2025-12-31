@@ -84,5 +84,5 @@ logging.basicConfig(level=logging.INFO)
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mesaj_al))
 
-print("🤖 Bot çalışıyor (Gemini 1.5 Flash)")
+print("🤖 Bot çalışıyor (Gemini 2.5 Flash)")
 app.run_polling()
