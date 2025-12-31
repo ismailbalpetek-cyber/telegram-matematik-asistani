@@ -1,9 +1,9 @@
 import os
-import base64
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 from google import genai
-from google.genai import types
+from PIL import Image
+import io
 
 # ===============================
 # ORTAM DEĞİŞKENLERİ
@@ -34,22 +34,14 @@ async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
             file = await photo.get_file()
             image_bytes = await file.download_as_bytearray()
 
-            image_base64 = base64.b64encode(image_bytes).decode()
+            image = Image.open(io.BytesIO(image_bytes))
 
             response = client.models.generate_content(
                 model="gemini-2.0-flash",
                 contents=[
-                    types.Content(
-                        role="user",
-                        parts=[
-                            "Bu görseldeki matematik sorusunu aynen yazıya dök. Açıklama yapma.",
-                            types.Part.from_inline_data(
-                                mime_type="image/png",
-                                data=image_base64
-                            )
-                        ],
-                    )
-                ],
+                    "Bu görseldeki matematik sorusunu aynen yazıya dök. Açıklama yapma.",
+                    image
+                ]
             )
 
             soru = response.text.strip()
