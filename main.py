@@ -1,74 +1,88 @@
 import os
-import requests
+import logging
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
+from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+import google.generativeai as genai
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
-# ==============================
-# ENV KONTROLLERİ
-# ==============================
+# ========================
+# ORTAM DEĞİŞKENLERİ
+# ========================
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-ZAI_API_KEY = os.environ.get("ZAI_API_KEY")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
-if not BOT_TOKEN or not ZAI_API_KEY:
-    raise RuntimeError("BOT_TOKEN veya ZAI_API_KEY eksik")
+if not BOT_TOKEN or not GOOGLE_API_KEY:
+    raise RuntimeError("BOT_TOKEN veya GOOGLE_API_KEY eksik")
 
-# ==============================
-# Z.AI API AYARLARI
-# ==============================
-ZAI_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-MODEL_NAME = "glm-4"   # En stabil ve ücretsiz modele en yakın
+# ========================
+# GEMINI AYARI
+# ========================
+genai.configure(api_key=GOOGLE_API_KEY)
 
-HEADERS = {
-    "Authorization": f"Bearer {ZAI_API_KEY}",
-    "Content-Type": "application/json"
-}
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    system_instruction="""
+Sen bir matematik öğretmenisin.
+Gelen soruya BENZER 2 adet beceri temelli matematik sorusu üret.
+Her soru:
+- 4 şıklı olsun
+- Tek doğru cevabı olsun
+- Çözümü adım adım yaz
+- Türkçe ve profesyonel olsun
+"""
+)
 
-# ==============================
-# Z.AI SORU CEVAPLAMA FONKSİYONU
-# ==============================
-def zai_cevap_uret(soru: str) -> str:
-    payload = {
-        "model": MODEL_NAME,
-        "messages": [
-            {
-                "role": "user",
-                "content": soru
-            }
-        ]
-    }
+# ========================
+# PDF OLUŞTURMA
+# ========================
+def pdf_olustur(metin):
+    dosya = "sorular.pdf"
+    c = canvas.Canvas(dosya, pagesize=A4)
+    text = c.beginText(40, 800)
 
-    r = requests.post(ZAI_URL, headers=HEADERS, json=payload, timeout=30)
+    for satir in metin.split("\n"):
+        text.textLine(satir)
 
-    if r.status_code != 200:
-        return f"❌ API Hatası ({r.status_code})\n{r.text}"
+    c.drawText(text)
+    c.showPage()
+    c.save()
+    return dosya
 
-    data = r.json()
-
-    # ✅ Z.AI GERÇEK CEVAP OKUMA
+# ========================
+# TELEGRAM MESAJI
+# ========================
+async def mesaj_al(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        return data["data"]["content"]
-    except Exception:
-        return f"❌ Cevap formatı beklenmedik:\n{data}"
+        await update.message.reply_text("✍️ Düşünüyorum...")
 
-# ==============================
-# TELEGRAM MESAJ HANDLER
-# ==============================
-async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    soru = update.message.text
-    await update.message.reply_text("✍️ Düşünüyorum...")
+        prompt = f"""
+Aşağıdaki matematik sorusuna benzer 2 adet yeni soru üret.
 
-    cevap = zai_cevap_uret(soru)
+SORU:
+{update.message.text}
+"""
 
-    await update.message.reply_text(cevap)
+        response = model.generate_content(prompt)
+        sonuc = response.text
 
-# ==============================
+        pdf = pdf_olustur(sonuc)
+
+        await update.message.reply_document(
+            document=open(pdf, "rb"),
+            filename="Matematik_Sorulari.pdf"
+        )
+
+    except Exception as e:
+        await update.message.reply_text(f"❌ Hata oluştu:\n{str(e)}")
+
+# ========================
 # BOT BAŞLAT
-# ==============================
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mesaj_yakala))
-    print("🤖 Bot çalışıyor...")
-    app.run_polling()
+# ========================
+logging.basicConfig(level=logging.INFO)
 
-if __name__ == "__main__":
-    main()
+app = ApplicationBuilder().token(BOT_TOKEN).build()
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mesaj_al))
+
+print("🤖 Bot çalışıyor...")
+app.run_polling()
