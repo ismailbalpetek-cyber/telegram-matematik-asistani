@@ -9,7 +9,7 @@ ZAI_API_KEY = os.environ.get("ZAI_API_KEY")
 if not BOT_TOKEN or not ZAI_API_KEY:
     raise RuntimeError("BOT_TOKEN veya ZAI_API_KEY eksik")
 
-ZAI_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+ZAI_URL = "https://api.z.ai/v1/chat/completions"
 
 async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -19,7 +19,12 @@ async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         kullanici_sorusu = update.message.text
 
-        prompt = f"""
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"""
 Aşağıdaki matematik sorusuna BENZER,
 6–8. sınıf seviyesinde,
 beceri temelli,
@@ -28,16 +33,12 @@ beceri temelli,
 Her soru için:
 - 4 şık (A,B,C,D)
 - Tek doğru cevap
-- Şıkları açık ve net yaz
+- Sadece soruları ve şıkları yaz, açıklama yapma.
 
 Soru:
 {kullanici_sorusu}
 """
-
-        payload = {
-            "model": "glm-4",
-            "messages": [
-                {"role": "user", "content": prompt}
+                }
             ]
         }
 
@@ -47,7 +48,9 @@ Soru:
         }
 
         r = requests.post(ZAI_URL, json=payload, headers=headers, timeout=60)
-        r.raise_for_status()
+
+        if r.status_code != 200:
+            raise RuntimeError(r.text)
 
         cevap = r.json()["choices"][0]["message"]["content"]
 
