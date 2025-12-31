@@ -9,7 +9,7 @@ ZAI_API_KEY = os.environ.get("ZAI_API_KEY")
 if not BOT_TOKEN or not ZAI_API_KEY:
     raise RuntimeError("BOT_TOKEN veya ZAI_API_KEY eksik")
 
-ZAI_URL = "https://api.z.ai/v1/chat/completions"
+ZAI_URL = "https://api.z.ai/api/v1/chat/completions"
 
 async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -24,20 +24,16 @@ async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "messages": [
                 {
                     "role": "user",
-                    "content": f"""
-Aşağıdaki matematik sorusuna BENZER,
-6–8. sınıf seviyesinde,
-beceri temelli,
-2 adet yeni soru üret.
-
-Her soru için:
-- 4 şık (A,B,C,D)
-- Tek doğru cevap
-- Sadece soruları ve şıkları yaz, açıklama yapma.
-
-Soru:
-{kullanici_sorusu}
-"""
+                    "content": (
+                        "Aşağıdaki matematik sorusuna BENZER, "
+                        "6–8. sınıf seviyesinde, beceri temelli "
+                        "2 adet yeni soru üret.\n\n"
+                        "Her soru için:\n"
+                        "- 4 şık (A,B,C,D)\n"
+                        "- Tek doğru cevap\n"
+                        "- Sadece soruları ve şıkları yaz\n\n"
+                        f"Soru:\n{kullanici_sorusu}"
+                    )
                 }
             ]
         }
