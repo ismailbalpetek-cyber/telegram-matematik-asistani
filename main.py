@@ -1,6 +1,4 @@
 import os
-print("BOT_TOKEN var mı:", bool(os.environ.get("BOT_TOKEN")))
-print("GOOGLE_API_KEY var mı:", bool(os.environ.get("GOOGLE_API_KEY")))
 import base64
 import google.generativeai as genai
 from telegram import Update
@@ -12,28 +10,22 @@ from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filte
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
-if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN bulunamadı")
-
-if not GOOGLE_API_KEY:
-    raise RuntimeError("GOOGLE_API_KEY bulunamadı")
-
 # ===============================
-# GEMINI AYARI
+# GEMINI AYARI (GÜNCEL MODEL)
 # ===============================
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-pro")
 
 # ===============================
 # MESAJ YAKALAYICI
 # ===============================
 async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        # -------- METİN GELİRSE --------
+        # -------- METİN --------
         if update.message.text:
             soru = update.message.text
 
-        # -------- FOTOĞRAF GELİRSE --------
+        # -------- FOTOĞRAF --------
         elif update.message.photo:
             photo = update.message.photo[-1]
             file = await photo.get_file()
@@ -42,23 +34,11 @@ async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
             image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
             response = model.generate_content([
+                "Bu görseldeki matematik sorusunu aynen yazıya dök. "
+                "Açıklama yapma.",
                 {
-                    "role": "user",
-                    "parts": [
-                        {
-                            "text": (
-                                "Bu görseldeki matematik sorusunu "
-                                "aynen yazıya dök. Açıklama yapma, "
-                                "sadece soruyu yaz."
-                            )
-                        },
-                        {
-                            "inline_data": {
-                                "mime_type": "image/png",
-                                "data": image_base64
-                            }
-                        }
-                    ]
+                    "mime_type": "image/png",
+                    "data": image_base64
                 }
             ])
 
@@ -68,14 +48,13 @@ async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❗ Metin veya fotoğraf gönder.")
             return
 
-        # -------- SONUÇ --------
         await update.message.reply_text(
             "📘 Soru alındı:\n\n" + soru
         )
 
     except Exception as e:
         await update.message.reply_text(
-            "❌ Bir hata oluştu:\n\n" + str(e)
+            "❌ Hata oluştu:\n" + str(e)
         )
 
 # ===============================
