@@ -1,24 +1,25 @@
-name: Telegram Bot
+name: Telegram Gemini Bot
 
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  run-bot:
+  run:
     runs-on: ubuntu-latest
-
-    env:
-      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-      ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
-
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Python kurulumu
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - run: pip install -r requirements.txt
+      - name: Paketler
+        run: pip install -r requirements.txt
 
-      - run: python main.py
+      - name: Botu çalıştır
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: python main.py
