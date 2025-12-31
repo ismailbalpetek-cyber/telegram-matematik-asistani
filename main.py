@@ -16,7 +16,7 @@ if not BOT_TOKEN or not ZAI_API_KEY:
 # Z.AI API AYARLARI
 # ==============================
 ZAI_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-MODEL_NAME = "glm-4-flash"   # En stabil ve ücretsiz modele en yakın
+MODEL_NAME = "glm-4"   # En stabil ve ücretsiz modele en yakın
 
 HEADERS = {
     "Authorization": f"Bearer {ZAI_API_KEY}",
