@@ -1,8 +1,9 @@
 import os
 import base64
-import google.generativeai as genai
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
+from google import genai
+from google.genai import types
 
 # ===============================
 # ORTAM DEĞİŞKENLERİ
@@ -10,37 +11,49 @@ from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filte
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
+if not BOT_TOKEN or not GOOGLE_API_KEY:
+    raise RuntimeError("BOT_TOKEN veya GOOGLE_API_KEY eksik")
+
 # ===============================
-# GEMINI AYARI (GÜNCEL MODEL)
+# GEMINI CLIENT (YENİ)
 # ===============================
-genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel("gemini-pro")
+client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # ===============================
 # MESAJ YAKALAYICI
 # ===============================
 async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        # -------- METİN --------
+        # ---------- METİN ----------
         if update.message.text:
             soru = update.message.text
 
-        # -------- FOTOĞRAF --------
+        # ---------- FOTOĞRAF ----------
         elif update.message.photo:
             photo = update.message.photo[-1]
             file = await photo.get_file()
             image_bytes = await file.download_as_bytearray()
 
-            image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+            image_base64 = base64.b64encode(image_bytes).decode()
 
-            response = model.generate_content([
-                "Bu görseldeki matematik sorusunu aynen yazıya dök. "
-                "Açıklama yapma.",
-                {
-                    "mime_type": "image/png",
-                    "data": image_base64
-                }
-            ])
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_text(
+                                "Bu görseldeki matematik sorusunu aynen yazıya dök. "
+                                "Açıklama yapma."
+                            ),
+                            types.Part.from_inline_data(
+                                mime_type="image/png",
+                                data=image_base64
+                            )
+                        ],
+                    )
+                ],
+            )
 
             soru = response.text.strip()
 
