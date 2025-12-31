@@ -1,4 +1,4 @@
-name: Telegram Bot
+name: Telegram Matematik Asistani
 
 on:
   workflow_dispatch:
@@ -11,17 +11,26 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Repo'yu çek
+        uses: actions/checkout@v3
 
-      - name: Python kurulumu
+      - name: Python kur
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Paketleri yükle
-        run: pip install -r requirements.txt
+      - name: Gerekli paketleri yükle
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Botu çalıştır
+      - name: Ortam degiskenlerini kontrol et (DEBUG)
+        run: |
+          echo "BOT_TOKEN var mi? -> ${{ secrets.BOT_TOKEN != '' }}"
+          echo "GOOGLE_API_KEY var mi? -> ${{ secrets.GOOGLE_API_KEY != '' }}"
+
+      - name: Botu calistir
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: python main.py
