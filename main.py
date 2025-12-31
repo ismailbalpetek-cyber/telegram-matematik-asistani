@@ -16,12 +16,12 @@ if not BOT_TOKEN or not GOOGLE_API_KEY:
     raise RuntimeError("BOT_TOKEN veya GOOGLE_API_KEY eksik")
 
 # ========================
-# GEMINI AYARI
+# GEMINI AYARI (DOĞRU MODEL)
 # ========================
 genai.configure(api_key=GOOGLE_API_KEY)
 
 model = genai.GenerativeModel(
-    model_name="gemini-2.5-flash",
+    model_name="gemini-1.5-flash",
     system_instruction="""
 Sen bir matematik öğretmenisin.
 Gelen soruya BENZER 2 adet beceri temelli matematik sorusu üret.
@@ -84,5 +84,5 @@ logging.basicConfig(level=logging.INFO)
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mesaj_al))
 
-print("🤖 Bot çalışıyor (Gemini 2.5 Flash)...")
+print("🤖 Bot çalışıyor (Gemini 1.5 Flash)")
 app.run_polling()
