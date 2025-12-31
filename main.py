@@ -15,7 +15,7 @@ if not BOT_TOKEN or not GOOGLE_API_KEY:
     raise RuntimeError("BOT_TOKEN veya GOOGLE_API_KEY eksik")
 
 # ===============================
-# GEMINI CLIENT (YENİ)
+# GEMINI CLIENT
 # ===============================
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
@@ -24,11 +24,11 @@ client = genai.Client(api_key=GOOGLE_API_KEY)
 # ===============================
 async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        # ---------- METİN ----------
+        # -------- METİN --------
         if update.message.text:
             soru = update.message.text
 
-        # ---------- FOTOĞRAF ----------
+        # -------- FOTOĞRAF --------
         elif update.message.photo:
             photo = update.message.photo[-1]
             file = await photo.get_file()
@@ -42,10 +42,7 @@ async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     types.Content(
                         role="user",
                         parts=[
-                            types.Part.from_text(
-                                "Bu görseldeki matematik sorusunu aynen yazıya dök. "
-                                "Açıklama yapma."
-                            ),
+                            "Bu görseldeki matematik sorusunu aynen yazıya dök. Açıklama yapma.",
                             types.Part.from_inline_data(
                                 mime_type="image/png",
                                 data=image_base64
