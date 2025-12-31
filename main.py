@@ -3,58 +3,72 @@ import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
+# ==============================
+# ENV KONTROLLERİ
+# ==============================
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 ZAI_API_KEY = os.environ.get("ZAI_API_KEY")
 
 if not BOT_TOKEN or not ZAI_API_KEY:
     raise RuntimeError("BOT_TOKEN veya ZAI_API_KEY eksik")
 
-ZAI_URL = "https://api.z.ai/api/v1/chat/completions"
+# ==============================
+# Z.AI API AYARLARI
+# ==============================
+ZAI_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+MODEL_NAME = "glm-4-flash"   # En stabil ve ücretsiz modele en yakın
 
-async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
+HEADERS = {
+    "Authorization": f"Bearer {ZAI_API_KEY}",
+    "Content-Type": "application/json"
+}
+
+# ==============================
+# Z.AI SORU CEVAPLAMA FONKSİYONU
+# ==============================
+def zai_cevap_uret(soru: str) -> str:
+    payload = {
+        "model": MODEL_NAME,
+        "messages": [
+            {
+                "role": "user",
+                "content": soru
+            }
+        ]
+    }
+
+    r = requests.post(ZAI_URL, headers=HEADERS, json=payload, timeout=30)
+
+    if r.status_code != 200:
+        return f"❌ API Hatası ({r.status_code})\n{r.text}"
+
+    data = r.json()
+
+    # ✅ Z.AI GERÇEK CEVAP OKUMA
     try:
-        if not update.message.text:
-            await update.message.reply_text("Şimdilik sadece metin gönder.")
-            return
+        return data["data"]["content"]
+    except Exception:
+        return f"❌ Cevap formatı beklenmedik:\n{data}"
 
-        kullanici_sorusu = update.message.text
+# ==============================
+# TELEGRAM MESAJ HANDLER
+# ==============================
+async def mesaj_yakala(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    soru = update.message.text
+    await update.message.reply_text("✍️ Düşünüyorum...")
 
-        payload = {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": (
-                        "Aşağıdaki matematik sorusuna BENZER, "
-                        "6–8. sınıf seviyesinde, beceri temelli "
-                        "2 adet yeni soru üret.\n\n"
-                        "Her soru için:\n"
-                        "- 4 şık (A,B,C,D)\n"
-                        "- Tek doğru cevap\n"
-                        "- Sadece soruları ve şıkları yaz\n\n"
-                        f"Soru:\n{kullanici_sorusu}"
-                    )
-                }
-            ]
-        }
+    cevap = zai_cevap_uret(soru)
 
-        headers = {
-            "Authorization": f"Bearer {ZAI_API_KEY}",
-            "Content-Type": "application/json"
-        }
+    await update.message.reply_text(cevap)
 
-        r = requests.post(ZAI_URL, json=payload, headers=headers, timeout=60)
+# ==============================
+# BOT BAŞLAT
+# ==============================
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, mesaj_yakala))
+    print("🤖 Bot çalışıyor...")
+    app.run_polling()
 
-        if r.status_code != 200:
-            raise RuntimeError(r.text)
-
-        cevap = r.json()["choices"][0]["message"]["content"]
-
-        await update.message.reply_text(cevap)
-
-    except Exception as e:
-        await update.message.reply_text("❌ Hata:\n" + str(e))
-
-app = ApplicationBuilder().token(BOT_TOKEN).build()
-app.add_handler(MessageHandler(filters.TEXT, mesaj_yakala))
-app.run_polling()
+if __name__ == "__main__":
+    main()
